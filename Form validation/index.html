@@ -51,7 +51,11 @@
         rules: [
             Validator.isRequired('#fullname'),
             Validator.isEmail('#email'),
+            // Validator.isRequired('#email'),
             Validator.isLength('#password',6),
+            Validator.isConfirmed('#password_confirmation', function(){
+              return document.querySelector('#form-1 #password').value;
+            }, 'Mật khẩu nhập vào không chính xác.')
         ]
     });
 </script>

@@ -1,11 +1,23 @@
 //Đối tượng `Validator`
 function Validator (options){
-
+    var selectorRules = {};
+    
     //hàm thực hiện validate
     function Validate(rule, inputElement){
-        var errorMessage = rule.test(inputElement.value);
+        
         var errorElement = inputElement.parentElement.querySelector(options.errorSelector);
-        console.log(errorMessage);
+        //yều cầu khi lỗi
+        var errorMessage;
+
+        //Lấy ra các rule của selector
+        var rules = selectorRules[rule.selector];
+
+        for(var i = 0; i < rules.length; i++){
+            errorMessage = rules[i](inputElement.value);
+            // console.log(errorMessage);
+            // dùng if errorMessage để có thể khiểm tra từng tường hợp rule
+            if(errorMessage) break;
+        }
 
         if(errorMessage){
             errorElement.innerText = errorMessage;
@@ -15,17 +27,38 @@ function Validator (options){
             inputElement.parentElement.classList.remove('invalid');
         }
     }
-
     //Lấy element của form cần validate
     var formElement = document.querySelector(options.form);
+    
 
+    // console.log(formElement);
+    // console.log(options.rules);
+
+    //nếu là form
     if(formElement){
+
+        //khi submit form
+        formElement.onsubmit = function(e){
+            e.preventDefault();
+            options.rules.forEach(rule =>{
+                var inputElement = formElement.querySelector(rule.selector);
+                Validate(rule, inputElement);
+            })
+        }
+
+        //Lặp qua mỗi rule và xử lý (blur, input,...)
         options.rules.forEach(rule => {
 
+            
+            //inputElement: #fullname, #email, #password
             var inputElement = formElement.querySelector(rule.selector);
-
-            console.log(inputElement);
-
+            // console.log(rule.test);
+            if(Array.isArray(selectorRules[rule.selector])){
+                selectorRules[rule.selector].push(rule.test);
+            }else{
+                selectorRules[rule.selector] = [rule.test];
+            }
+            
             if(inputElement){
                 //xử lý trường hợp blur ra input
                 inputElement.onblur = function(){
@@ -44,6 +77,8 @@ function Validator (options){
     }
 }
 
+
+//rule fullname
 Validator.isRequired = function(selector){
     return{
         selector: selector,
@@ -53,6 +88,7 @@ Validator.isRequired = function(selector){
     }
 }
 
+//rule email
 Validator.isEmail = function(selector){
     return{
         selector: selector,
@@ -63,11 +99,22 @@ Validator.isEmail = function(selector){
     }
 }
 
+//rule password
 Validator.isLength = function(selector,min){
     return{
         selector: selector,
         test: function(value){
             return value.length >= min ? undefined : `Vui lòng nhập tối thiểu ${min} kí tự.`; 
+        }
+    }
+}
+
+//rule password_confirmation
+Validator.isConfirmed = function(selector, getConfirmValue, message){
+    return{
+        selector: selector,
+        test: function(value){
+            return value === getConfirmValue() ? undefined : message || 'Giá trị nhập vào không trùng khớp.'; 
         }
     }
 }
